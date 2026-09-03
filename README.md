@@ -13,7 +13,12 @@ does not require Probatio to run. It reuses the same free data sources
 Parquet-based storage pattern for consistency across the two projects, but
 keeps its own independent copy of data.
 
-**Disclaimer:** This is a research/educational tool. Nothing here is
+=======
+
+\*\*Data access:\*\* \[fill in — pointing at Probatio's warehouse directly, or a
+local copy of a subset of data] 
+
+\*\*Disclaimer:\*\* This is a research/educational tool. Nothing here is
 investment advice.
 
 ## Status
