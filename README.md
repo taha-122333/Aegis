@@ -47,12 +47,13 @@ BTC-USD, ETH-USD (crypto). Configurable in `engine/config.py`.
 
 ## Project structure
 
+```
 aegis/
 ├── engine/ # core logic: data loading, returns, allocators, risk
 ├── data/ # cached price data + generated plots (gitignored)
 ├── tests/ # pytest unit tests
 └── notebooks/ # exploratory/analysis scripts
-
+```
 
 ## Running it
 
