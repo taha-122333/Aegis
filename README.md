@@ -84,7 +84,7 @@ real-world diversification research.
 `api.py` exposes the engine over HTTP using FastAPI. Run locally with:
 
 ```bash
-uvicorn api:app --reload
+python -m uvicorn api:app --reload
 ```
 
 Then visit `http://127.0.0.1:8000/docs` for interactive, auto-generated
