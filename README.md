@@ -3,8 +3,8 @@
 Aegis is a portfolio construction and risk engine: given a set of assets or
 strategies, it answers how much to allocate to each one and how much you
 could realistically lose. It covers mean-variance optimization, risk parity,
-the Kelly criterion, Monte Carlo simulation, VaR/CVaR risk metrics, and a
-walk-forward historical backtest.
+the Kelly criterion, Monte Carlo simulation, VaR/CVaR risk metrics, a
+walk-forward historical backtest, and a REST API.
 
 Aegis is the second project in a quant-finance portfolio, alongside
 [Probatio](https://github.com/xReFaLL/Probatio), a strategy backtesting
@@ -24,14 +24,16 @@ investment advice.
 - Sprint 2 — Core Allocators: done
 - Sprint 3 — Risk Analytics: done
 - Sprint 4 — Historical Backtest: done
-- Sprint 5 — API Layer: not started
+- Sprint 5 — API Layer: done
 - Sprint 6 — Presentation Layer (stretch): not started
 - Sprint 7 — Polish & Documentation: not started
 
 ## Asset universe (Sprint 1)
 
 AAPL, MSFT, NVDA (large-cap stocks), SPY (S&P 500 ETF), GLD (gold),
-BTC-USD, ETH-USD (crypto). Configurable in `engine/config.py`.
+BTC-USD, ETH-USD (crypto) as the default universe, configurable in
+`engine/config.py`. The API (Sprint 5) accepts any tickers, not just this
+default set.
 
 ## Allocation methods (Sprint 2)
 
@@ -77,22 +79,48 @@ Parity, and the naive Equal Weight baseline proved a genuinely hard
 benchmark to beat (465% return, competitive Sharpe) — consistent with
 real-world diversification research.
 
+## API layer (Sprint 5)
+
+`api.py` exposes the engine over HTTP using FastAPI. Run locally with:
+
+```bash
+uvicorn api:app --reload
+```
+
+Then visit `http://127.0.0.1:8000/docs` for interactive, auto-generated
+API documentation where every endpoint can be tested live in the browser.
+
+**Endpoints:**
+- `GET /` — health check
+- `GET /universe` — the default asset universe (for reference; other
+  endpoints accept any tickers)
+- `POST /allocate` — submit tickers + an allocation method, get back
+  weights and expected return/volatility
+- `POST /risk-report` — submit tickers + an allocation method, get back
+  weights plus a full risk report (VaR, CVaR, drawdown, Sharpe, Sortino,
+  COVID stress test)
+
+Requests are validated with Pydantic (e.g. minimum 2 tickers, no
+duplicates, method must be one of the four supported) before any
+computation runs.
+
 ## Tech stack
 
 - Core engine: Python 3.14, numpy, pandas, scipy, matplotlib
 - Data: yfinance, cached locally as Parquet (pyarrow)
-- API layer (later): FastAPI
+- API layer: FastAPI, uvicorn, Pydantic
 - Presentation (later, optional): Streamlit or a minimal Next.js page
-- Tests: pytest
+- Tests: pytest, httpx (for API testing)
 
 ## Project structure
 
 ```
 aegis/
-├── engine/ # core logic: data loading, returns, allocators, risk, backtest
+├── engine/ # core logic: data loading, returns, allocators, risk, backtest, API models/service
 ├── data/ # cached price data + generated plots (gitignored)
 ├── tests/ # pytest unit tests
-└── notebooks/ # exploratory/analysis scripts
+├── notebooks/ # exploratory/analysis scripts
+└── api.py # FastAPI app entry point
 ```
 
 ## Running it
@@ -105,4 +133,5 @@ python notebooks/explore_returns.py
 python notebooks/compare_allocators.py
 python notebooks/risk_report.py
 python notebooks/backtest_comparison.py
+python -m uvicorn api:app --reload   # then visit http://127.0.0.1:8000/docs
 ```
