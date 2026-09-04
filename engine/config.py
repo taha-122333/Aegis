@@ -26,3 +26,8 @@ TICKERS = [
 # How far back to pull daily price history
 START_DATE = "2015-01-01"
 END_DATE = None  # None = up to today
+
+# Backtest parameters (Sprint 4)
+BACKTEST_LOOKBACK_DAYS = 756          # ~3 years of trailing daily data used to estimate weights at each rebalance
+BACKTEST_REBALANCE_FREQ = "M"         # "M" = monthly, "Q" = quarterly
+BACKTEST_TRANSACTION_COST_BPS = 10.0  # 0.10% cost per unit of portfolio turnover

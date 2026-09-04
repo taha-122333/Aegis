@@ -1,10 +1,23 @@
 """
 Turns raw prices into returns, and returns into the covariance/correlation
-matrices that the allocators in later sprints will need.
+matrices that the allocators need. Also handles trading-day alignment.
 """
 
 import numpy as np
 import pandas as pd
+
+
+def align_trading_days(prices: pd.DataFrame) -> pd.DataFrame:
+    """
+    Restricts price data to days where EVERY asset has a price. Crypto
+    trades every calendar day, but stocks/ETFs only trade on weekdays and
+    market holidays — dropping any row with a missing price naturally
+    aligns everything onto a shared trading calendar (effectively the
+    stock market's calendar, since that's the more restrictive one).
+    Needed for rebalancing, where every asset must be tradeable on the
+    same day.
+    """
+    return prices.dropna(how="any")
 
 
 def compute_returns(prices: pd.DataFrame) -> pd.DataFrame:

@@ -139,3 +139,27 @@ def normalize_weights(weights: pd.Series) -> pd.Series:
     two methods on the same footing.
     """
     return weights / weights.sum()
+
+def kelly_portfolio_bounded(
+    mean_returns: pd.Series,
+    cov: pd.DataFrame,
+    risk_free: float = 0.0,
+    weight_bounds: tuple = (-0.5, 1.0),
+) -> pd.Series:
+    """
+    Practical (bounded) Kelly: computes raw Kelly weights via matrix
+    inversion, then clips each asset's weight to a reasonable range
+    before renormalizing to sum to 1. Raw Kelly has no built-in limit on
+    leverage or short positions — when the covariance matrix is poorly
+    conditioned (e.g. highly correlated assets like BTC/ETH, or a short
+    lookback window), matrix inversion can produce extreme, unstable
+    weights. Capping each weight to at most 100% long or 50% short
+    prevents that blow-up while preserving Kelly's directional logic
+    (still overweighting attractive assets, underweighting/shorting
+    unattractive ones) — this is the same idea as the "fractional Kelly"
+    practitioners use in the real world.
+    """
+    raw = kelly_portfolio(mean_returns, cov, risk_free)
+    normalized = normalize_weights(raw)
+    clipped = normalized.clip(lower=weight_bounds[0], upper=weight_bounds[1])
+    return clipped / clipped.sum()
