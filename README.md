@@ -4,7 +4,7 @@ Aegis is a portfolio construction and risk engine: given a set of assets or
 strategies, it answers how much to allocate to each one and how much you
 could realistically lose. It covers mean-variance optimization, risk parity,
 the Kelly criterion, Monte Carlo simulation, VaR/CVaR risk metrics, a
-walk-forward historical backtest, and a REST API.
+walk-forward historical backtest, a REST API, and an interactive dashboard.
 
 Aegis is the second project in a quant-finance portfolio, alongside
 [Probatio](https://github.com/xReFaLL/Probatio), a strategy backtesting
@@ -25,15 +25,15 @@ investment advice.
 - Sprint 3 — Risk Analytics: done
 - Sprint 4 — Historical Backtest: done
 - Sprint 5 — API Layer: done
-- Sprint 6 — Presentation Layer (stretch): not started
+- Sprint 6 — Presentation Layer: done
 - Sprint 7 — Polish & Documentation: not started
 
 ## Asset universe (Sprint 1)
 
 AAPL, MSFT, NVDA (large-cap stocks), SPY (S&P 500 ETF), GLD (gold),
 BTC-USD, ETH-USD (crypto) as the default universe, configurable in
-`engine/config.py`. The API (Sprint 5) accepts any tickers, not just this
-default set.
+`engine/config.py`. Both the API (Sprint 5) and the dashboard (Sprint 6)
+accept any tickers, not just this default set.
 
 ## Allocation methods (Sprint 2)
 
@@ -42,10 +42,14 @@ default set.
 - **Risk parity:** allocates so each asset contributes an equal share of
   total portfolio risk, rather than an equal dollar amount.
 - **Kelly criterion:** solves for the growth-optimal allocation given
-  expected returns and covariance, via covariance matrix inversion. A
-  **bounded/fractional version** (`kelly_portfolio_bounded`) clips weights
-  to a sane range before renormalizing — see Sprint 4 notes below for why
-  this matters in practice, not just in theory.
+  expected returns and covariance, via covariance matrix inversion. Two
+  versions are available:
+  - `kelly_portfolio` — raw, unconstrained. Can produce large short
+    positions and is highly sensitive to small changes in the covariance
+    matrix (see Sprint 4 and Sprint 6 notes below).
+  - `kelly_portfolio_bounded` — clips weights to a sane range before
+    renormalizing, the practical "fractional Kelly" version used in the
+    backtest and API by default.
 
 ## Risk analytics (Sprint 3)
 
@@ -55,8 +59,8 @@ drawdown, Sharpe ratio, Sortino ratio, a COVID-crash stress test
 (Feb 19 – Mar 23, 2020), and a 10,000-path Monte Carlo simulation with a
 fan chart of possible 1-year futures.
 
-Notable finding: during the COVID stress test, the Kelly portfolio was the
-only one that stayed profitable (+0.36%), because its short position in
+Notable finding: during the COVID stress test, the raw Kelly portfolio was
+the only one that stayed profitable (+0.36%), because its short position in
 SPY acted as a hedge against the broad market selloff.
 
 ## Historical backtest (Sprint 4)
@@ -84,7 +88,7 @@ real-world diversification research.
 `api.py` exposes the engine over HTTP using FastAPI. Run locally with:
 
 ```bash
-python -m uvicorn api:app --reload
+uvicorn api:app --reload
 ```
 
 Then visit `http://127.0.0.1:8000/docs` for interactive, auto-generated
@@ -101,15 +105,39 @@ API documentation where every endpoint can be tested live in the browser.
   COVID stress test)
 
 Requests are validated with Pydantic (e.g. minimum 2 tickers, no
-duplicates, method must be one of the four supported) before any
+duplicates, method must be one of the supported options) before any
 computation runs.
+
+## Interactive dashboard (Sprint 6)
+
+`dashboard.py` is a Streamlit app for exploring allocations and risk
+interactively — no new finance logic, purely a visual layer on top of
+Sprints 1-5. Run with:
+
+```bash
+streamlit run dashboard.py
+```
+
+Lets you pick any tickers, choose an allocation method (including both
+raw and bounded Kelly side by side for comparison), and see live-updating
+weights, the efficient frontier, risk metrics, a COVID stress test, and a
+Monte Carlo fan chart.
+
+**Notable finding:** re-running raw Kelly with freshly downloaded data
+(a few months newer than the data used in Sprint 3) shifted its SPY short
+position from about -72% to -60%, which weakened its COVID-crash hedge
+enough to turn a positive stress-test result into a slightly negative one.
+This is a live demonstration of the same instability documented in
+Sprint 4 — raw Kelly's weights are highly sensitive to small changes in
+the covariance matrix, precisely because BTC/ETH's high correlation makes
+that matrix close to singular.
 
 ## Tech stack
 
 - Core engine: Python 3.14, numpy, pandas, scipy, matplotlib
 - Data: yfinance, cached locally as Parquet (pyarrow)
 - API layer: FastAPI, uvicorn, Pydantic
-- Presentation (later, optional): Streamlit or a minimal Next.js page
+- Presentation: Streamlit
 - Tests: pytest, httpx (for API testing)
 
 ## Project structure
@@ -120,7 +148,8 @@ aegis/
 ├── data/ # cached price data + generated plots (gitignored)
 ├── tests/ # pytest unit tests
 ├── notebooks/ # exploratory/analysis scripts
-└── api.py # FastAPI app entry point
+├── api.py # FastAPI app entry point
+└── dashboard.py # Streamlit dashboard entry point
 ```
 
 ## Running it
@@ -133,5 +162,6 @@ python notebooks/explore_returns.py
 python notebooks/compare_allocators.py
 python notebooks/risk_report.py
 python notebooks/backtest_comparison.py
-python -m uvicorn api:app --reload   # then visit http://127.0.0.1:8000/docs
+uvicorn api:app --reload        # then visit http://127.0.0.1:8000/docs
+streamlit run dashboard.py      # opens an interactive dashboard in your browser
 ```

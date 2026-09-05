@@ -10,3 +10,4 @@ fastapi
 uvicorn
 httpx
 httpx2
+streamlit
